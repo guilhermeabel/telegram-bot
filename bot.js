@@ -10,7 +10,7 @@ const TELEGRAM_API_TOKEN = process.env.TELEGRAM_API_TOKEN;
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-app.post("/new-message", (req, res) => {
+app.post("/", (req, res) => {
   const { message } = req.body;
 
   if (!message || message.text.toLowerCase().indexOf("marco") < 0) {
