@@ -28,8 +28,8 @@ const listReminders = async (bot, chatId, reminders) => {
 
 	for (const [userId, job] of reminders.entries()) {
 		if (userId === chatId) {
-			const { rule } = job;
-			const time = `${rule.hour}:${rule.minute < 10 ? '0' + rule.minute : rule.minute}`;
+			const nextInvocation = job.nextInvocation();
+			const time = `${nextInvocation.getHours()}:${nextInvocation.getMinutes() < 10 ? '0' + nextInvocation.getMinutes() : nextInvocation.getMinutes()}`;
 			reminderList += `${index}. Reminder at ${time}\n`;
 			index++;
 		}
@@ -46,9 +46,14 @@ const addReminder = async (bot, chatId, time, reminderText, reminders) => {
 	}
 
 	const [hours, minutes] = time.split(':');
-	const cronExpression = `0 ${minutes} ${hours} * * *`;
+	const now = new Date();
+	const scheduledTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), parseInt(hours), parseInt(minutes), 0);
 
-	const job = schedule.scheduleJob({ rule: cronExpression, tz: 'America/Sao_Paulo' }, async () => {
+	if (scheduledTime < now) {
+		scheduledTime.setDate(scheduledTime.getDate() + 1);
+	}
+
+	const job = schedule.scheduleJob(scheduledTime, async () => {
 		await bot.sendMessage(chatId, `⏰ Reminder: ${reminderText.join(' ')}`);
 		job.cancel();
 		reminders.delete(chatId);
@@ -57,6 +62,7 @@ const addReminder = async (bot, chatId, time, reminderText, reminders) => {
 	reminders.set(chatId, job);
 	await bot.sendMessage(chatId, `✅ Reminder set for ${time}: "${reminderText.join(' ')}"`);
 };
+
 
 const cancelReminder = async (bot, chatId, reminders) => {
 	const job = reminders.get(chatId);
