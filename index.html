@@ -4,8 +4,65 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Telegram Bot - Clockwork Bot</title>
+	<style>
+		@import url('https://fonts.googleapis.com/css2?family=DM+Mono&family=Open+Sans&family=Varela+Round&display=swap');
+
+		body {
+			background-color: #1e1e1e;
+			color: #fff;
+			font-family: 'Varela', sans-serif;
+			font-size: 1.2rem;
+
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			height: 100vh;
+		}
+
+		body div {
+			width: 300px;
+		}
+
+		span.code {
+			font-family: 'DM Mono', monospace;
+			font-size: 1.0rem;
+			color: #000;
+
+			background-color: #28A8E9;
+			border: 1px solid #28A8E9;
+			border-radius: 5px;
+			padding: 5px 8px;
+		}
+
+		p.presentation {
+			font-size: 1.2rem;
+			color: #c7c7c7;
+		}
+
+		ul {
+			padding-inline-start: 24px;
+		}
+
+		li::marker {
+			content: "\1F449";
+		}
+
+		li {
+			padding-left: 6px;
+		}
+	</style>
 </head>
 <body>
-    <h2>Hello World, I am a Node.JS Server!</h2>
+	<div>
+		<h3>Hello world, <br /> I am a Telegram bot!</h3>
+		<span class="code">@clockwork7_bot</span>
+		<p class="presentation">My name is <b>Clockwork Bot</b><br /> and I am a bot that can help you with:</p>
+		<ul>
+			<li>...</li>
+			<li>Nothing!</li>
+			<li>yet...</li>
+	</div>
+	
 </body>
 </html>
