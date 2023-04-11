@@ -1,14 +1,22 @@
 import TelegramBot from 'node-telegram-bot-api';
 import schedule from 'node-schedule';
-import cronParser from 'cron-parser';
 
 const reminders = new Map();
+
+const Action = {
+	Start: '/start',
+	ListReminders: '/list_reminders',
+	SetReminder: '/set_reminder',
+	CancelReminder: '/cancel_reminder',
+}
 
 const sendGreeting = async (bot, chatId) => {
 	const greeting = 'Welcome! Please choose a command:';
 	const keyboard = [
 		[
-			{ text: 'Set a reminder', callback_data: 'reminder' },
+			{ text: 'Set a reminder', callback_data: Action.SetReminder },
+			{ text: 'Cancel a reminder', callback_data: Action.CancelReminder },
+			{ text: 'List reminders', callback_data: Action.ListReminders },
 		],
 	];
 
@@ -90,23 +98,23 @@ export default async (request, response) => {
 				},
 			} = body;
 
-			if (text === '/start') {
+			if (text === Action.Start) {
 				await sendGreeting(bot, id);
 			}
 
 			const [command, ...args] = text.split(' ');
 
-			if (command === '/list_reminders') {
+			if (command === Action.ListReminders) {
 				await listReminders(bot, id, reminders);
 				return response.send('OK');
 			}
 
-			if (command === '/set_reminder') {
+			if (command === Action.SetReminder) {
 				await addReminder(bot, id, args[0], args.slice(1), reminders);
 				return response.send('OK');
 			}
 
-			if (command === '/cancel_reminder') {
+			if (command === Action.CancelReminder) {
 				await cancelReminder(bot, id, reminders);
 				return response.send('OK');
 			}
