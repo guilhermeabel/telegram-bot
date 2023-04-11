@@ -1,4 +1,20 @@
 import TelegramBot from 'node-telegram-bot-api';
+import schedule from 'node-schedule';
+
+const reminders = new Map();
+
+const sendGreeting = async (bot, chatId) => {
+  const greeting = 'Welcome! Please choose a command:';
+  const keyboard = [
+    [
+      { text: 'Set a reminder', callback_data: 'reminder' },
+    ],
+  ];
+
+  const replyMarkup = JSON.stringify({ inline_keyboard: keyboard });
+
+  await bot.sendMessage(chatId, greeting, { reply_markup: replyMarkup });
+};
 
 export default async (request, response) => {
   try {
@@ -13,12 +29,54 @@ export default async (request, response) => {
         },
       } = body;
 
-      const message = `✅ Message Received: \n*"${text}"*`;
+      if (text === '/start') {
+        await sendGreeting(bot, id);
+      }
 
-      await bot.sendMessage(id, message, { parse_mode: 'Markdown' });
+      const [command, ...args] = text.split(' ');
+
+      if (command === '/set_reminder') {
+        const [time, ...reminderText] = args;
+        const timeRegex = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/;
+        if (!timeRegex.test(time) || !reminderText.length) {
+          await bot.sendMessage(id, 'Incorrect format. Example: /set_reminder 17:00 Pick up groceries');
+        } else {
+          const job = schedule.scheduleJob(time, async () => {
+            await bot.sendMessage(id, `⏰ Reminder: ${reminderText.join(' ')}`);
+            job.cancel();
+            reminders.delete(id);
+          });
+
+          reminders.set(id, job);
+          await bot.sendMessage(id, `✅ Reminder set for ${time}: "${reminderText.join(' ')}"`);
+        }
+      } else if (command === '/cancel_reminder') {
+        const job = reminders.get(id);
+
+        if (job) {
+          job.cancel();
+          reminders.delete(id);
+          await bot.sendMessage(id, '❌ Reminder canceled');
+        } else {
+          await bot.sendMessage(id, '⚠️ No active reminder found');
+        }
+      }
+    } else if (body.callback_query) {
+      const {
+        callback_query: {
+          id: callbackQueryId,
+          data,
+          from: { id: userId },
+        },
+      } = body;
+
+      await bot.answerCallbackQuery(callbackQueryId);
+
+      if (data === 'reminder') {
+        await bot.sendMessage(userId, 'Please set a reminder, e.g., /set_reminder 17:00 Pick up groceries');
+      }
     }
   } catch (error) {
-
     console.error('Error sending message');
     console.log(error.toString());
   }
