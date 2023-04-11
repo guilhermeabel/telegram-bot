@@ -38,6 +38,39 @@ const listReminders = async (bot, chatId, reminders) => {
 	await bot.sendMessage(chatId, reminderList);
 };
 
+const addReminder = async (bot, chatId, time, reminderText, reminders) => {
+	const timeRegex = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/;
+	if (!timeRegex.test(time) || !reminderText.length) {
+		await bot.sendMessage(chatId, 'Incorrect format. Example: /set_reminder 17:00 Pick up groceries');
+		return;
+	}
+
+	const [hours, minutes] = time.split(':');
+	const cronExpression = `0 ${minutes} ${hours} * * *`;
+
+	const job = schedule.scheduleJob({ rule: cronExpression, tz: 'America/Sao_Paulo' }, async () => {
+		await bot.sendMessage(chatId, `⏰ Reminder: ${reminderText.join(' ')}`);
+		job.cancel();
+		reminders.delete(chatId);
+	});
+
+	reminders.set(chatId, job);
+	await bot.sendMessage(chatId, `✅ Reminder set for ${time}: "${reminderText.join(' ')}"`);
+};
+
+const cancelReminder = async (bot, chatId, reminders) => {
+	const job = reminders.get(chatId);
+
+	if (job) {
+		job.cancel();
+		reminders.delete(chatId);
+		await bot.sendMessage(chatId, '❌ Reminder canceled');
+	} else {
+		await bot.sendMessage(chatId, '⚠️ No active reminder found');
+	}
+};
+
+
 export default async (request, response) => {
 	try {
 		const bot = new TelegramBot(process.env.TELEGRAM_API_TOKEN);
@@ -63,36 +96,13 @@ export default async (request, response) => {
 			}
 
 			if (command === '/set_reminder') {
-				const [time, ...reminderText] = args;
-				const timeRegex = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/;
-				if (!timeRegex.test(time) || !reminderText.length) {
-					await bot.sendMessage(id, 'Incorrect format. Example: /set_reminder 17:00 Pick up groceries');
-					return response.send('OK');
-				}
-
-				const [hours, minutes] = time.split(':');
-				const cronExpression = `0 ${minutes} ${hours} * * *`;
-
-				const job = schedule.scheduleJob({ rule: cronExpression, tz: 'America/Sao_Paulo' }, async () => {
-					await bot.sendMessage(id, `⏰ Reminder: ${reminderText.join(' ')}`);
-					job.cancel();
-					reminders.delete(id);
-				});
-
-				reminders.set(id, job);
-				await bot.sendMessage(id, `✅ Reminder set for ${time}: "${reminderText.join(' ')}"`);
-
+				await addReminder(bot, id, args[0], args.slice(1), reminders);
 				return response.send('OK');
-			} else if (command === '/cancel_reminder') {
-				const job = reminders.get(id);
+			}
 
-				if (job) {
-					job.cancel();
-					reminders.delete(id);
-					await bot.sendMessage(id, '❌ Reminder canceled');
-				} else {
-					await bot.sendMessage(id, '⚠️ No active reminder found');
-				}
+			if (command === '/cancel_reminder') {
+				await cancelReminder(bot, id, reminders);
+				return response.send('OK');
 			}
 		} else if (body.callback_query) {
 			const {
