@@ -17,6 +17,27 @@ const sendGreeting = async (bot, chatId) => {
 	await bot.sendMessage(chatId, greeting, { reply_markup: replyMarkup });
 };
 
+const listReminders = async (bot, chatId, reminders) => {
+	if (reminders.size === 0) {
+		await bot.sendMessage(chatId, 'No reminders have been set.');
+		return;
+	}
+
+	let reminderList = 'List of reminders:\n\n';
+	let index = 1;
+
+	for (const [userId, job] of reminders.entries()) {
+		if (userId === chatId) {
+			const { rule } = job;
+			const time = `${rule.hour}:${rule.minute < 10 ? '0' + rule.minute : rule.minute}`;
+			reminderList += `${index}. Reminder at ${time}\n`;
+			index++;
+		}
+	}
+
+	await bot.sendMessage(chatId, reminderList);
+};
+
 export default async (request, response) => {
 	try {
 		const bot = new TelegramBot(process.env.TELEGRAM_API_TOKEN);
@@ -35,6 +56,11 @@ export default async (request, response) => {
 			}
 
 			const [command, ...args] = text.split(' ');
+
+			if (command === '/list_reminders') {
+				await listReminders(bot, id, reminders);
+				return response.send('OK');
+			}
 
 			if (command === '/set_reminder') {
 				const [time, ...reminderText] = args;
