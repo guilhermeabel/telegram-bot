@@ -10,13 +10,12 @@ const TELEGRAM_API_TOKEN = process.env.TELEGRAM_API_TOKEN;
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+app.get("/", (req, res) => {
+	res.send("status: running");
+  });
+
 app.post("/", (req, res) => {
   const { message } = req.body;
-
-  if (!message || message.text.toLowerCase().indexOf("marco") < 0) {
-    return res.end();
-  }
-
   const apiURL = `https://api.telegram.org/bot${TELEGRAM_API_TOKEN}/sendMessage`;
   const payload = { chat_id: message.chat.id, text: "test" };
 
