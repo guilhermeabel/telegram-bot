@@ -1,5 +1,6 @@
 import TelegramBot from 'node-telegram-bot-api';
 import schedule from 'node-schedule';
+import cronParser from 'cron-parser';
 
 const reminders = new Map();
 
@@ -37,19 +38,25 @@ export default async (request, response) => {
 
       if (command === '/set_reminder') {
         const [time, ...reminderText] = args;
-        const timeRegex = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/;
-        if (!timeRegex.test(time) || !reminderText.length) {
-          await bot.sendMessage(id, 'Incorrect format. Example: /set_reminder 17:00 Pick up groceries');
-        } else {
-          const job = schedule.scheduleJob(time, async () => {
-            await bot.sendMessage(id, `⏰ Reminder: ${reminderText.join(' ')}`);
-            job.cancel();
-            reminders.delete(id);
-          });
+		const timeRegex = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/;
+		if (!timeRegex.test(time) || !reminderText.length) {
+			await bot.sendMessage(id, 'Incorrect format. Example: /set_reminder 17:00 Pick up groceries');
+			return response.send('OK');
+		}
 
-          reminders.set(id, job);
-          await bot.sendMessage(id, `✅ Reminder set for ${time}: "${reminderText.join(' ')}"`);
-        }
+		const [hours, minutes] = time.split(':');
+		const cronExpression = `0 ${minutes} ${hours} * * *`;
+
+		const job = schedule.scheduleJob({rule: cronExpression, tz: 'America/Sao_Paulo'}, async () => {
+			await bot.sendMessage(id, `⏰ Reminder: ${reminderText.join(' ')}`);
+			job.cancel();
+			reminders.delete(id);
+		});
+
+		reminders.set(id, job);
+		await bot.sendMessage(id, `✅ Reminder set for ${time}: "${reminderText.join(' ')}"`);
+
+		return response.send('OK');
       } else if (command === '/cancel_reminder') {
         const job = reminders.get(id);
 
