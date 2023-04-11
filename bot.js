@@ -26,4 +26,4 @@ app.post("/", (req, res) => {
     .catch((err) => res.end("Error: " + err));
 });
 
-app.listen(3000, () => console.log("telegram app: port 3000"));
+app.listen(process.env.PORT);
